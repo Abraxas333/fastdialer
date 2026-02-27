@@ -226,6 +226,10 @@ func (d *Dialer) dialIPS(ctx context.Context, l4 l4dialer, opts *dialOptions) (c
 	if opts.shouldUseTLS {
 		tlsconfigCopy := opts.tlsconfig.Clone()
 
+		if tlsconfigCopy.KeyLogWriter == nil {
+			tlsconfigCopy.KeyLogWriter = getKeyLogWriter()
+		}
+
 		switch {
 		case d.options.SNIName != "":
 			tlsconfigCopy.ServerName = d.options.SNIName
@@ -260,6 +264,7 @@ func (d *Dialer) dialIPS(ctx context.Context, l4 l4dialer, opts *dialOptions) (c
 				MinVersion:         tlsconfigCopy.MinVersion,
 				MaxVersion:         tlsconfigCopy.MaxVersion,
 				CipherSuites:       tlsconfigCopy.CipherSuites,
+				KeyLogWriter:       tlsconfigCopy.KeyLogWriter,
 			}
 			var uTLSConn *utls.UConn
 			switch opts.impersonateStrategy {

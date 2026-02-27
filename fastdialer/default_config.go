@@ -2,6 +2,8 @@ package fastdialer
 
 import (
 	"crypto/tls"
+	"io"
+	"os"
 
 	ztls "github.com/zmap/zcrypto/tls"
 )
@@ -22,6 +24,15 @@ func getUnsafeCipherSuites() []uint16 {
 	return unsafeCipherSuites
 }
 
+func getKeyLogWriter() io.Writer {
+	if path := os.Getenv("SSLKEYLOGFILE"); path != "" {
+		if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600); err == nil {
+			return f
+		}
+	}
+	return nil
+}
+
 // DefaultTLSConfig is a default TLS configuration that is used by the
 // fastdialer.
 var DefaultTLSConfig = &tls.Config{
@@ -29,6 +40,7 @@ var DefaultTLSConfig = &tls.Config{
 	InsecureSkipVerify: true,
 	MinVersion:         tls.VersionTLS10,
 	CipherSuites:       getUnsafeCipherSuites(),
+	KeyLogWriter:       getKeyLogWriter(),
 }
 
 // DefaultZTLSConfig is a default ZTLS configuration that is used by the
