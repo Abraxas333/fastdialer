@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"io"
 	"os"
+	"sync"
 
 	ztls "github.com/zmap/zcrypto/tls"
 )
@@ -24,13 +25,20 @@ func getUnsafeCipherSuites() []uint16 {
 	return unsafeCipherSuites
 }
 
+var (
+	keyLogOnce   sync.Once
+	keyLogWriter io.Writer
+)
+
 func getKeyLogWriter() io.Writer {
-	if path := os.Getenv("SSLKEYLOGFILE"); path != "" {
-		if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600); err == nil {
-			return f
+	keyLogOnce.Do(func() {
+		if path := os.Getenv("SSLKEYLOGFILE"); path != "" {
+			if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600); err == nil {
+				keyLogWriter = f
+			}
 		}
-	}
-	return nil
+	})
+	return keyLogWriter
 }
 
 // DefaultTLSConfig is a default TLS configuration that is used by the
